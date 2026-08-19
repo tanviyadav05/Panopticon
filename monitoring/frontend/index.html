@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panopticon — Live Monitoring</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__left">
+    <div class="brand">PANOPTICON<span class="brand__dim"> / arena control</span></div>
+    <div id="conn-status" class="conn-status conn-status--connecting">connecting…</div>
+  </div>
+  <div class="topbar__right">
+    <div class="active-target-badge" id="active-target-badge">
+      <span class="active-target-badge__dot"></span>
+      <span id="active-target-label">—</span>
+      <span class="active-target-badge__tag">ACTIVE TARGET</span>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+
+  <section class="target-section">
+    <div class="target-section__map">
+      <div class="section-eyebrow">Network Topology</div>
+      <div id="network-map" class="network-map"></div>
+    </div>
+    <div class="target-section__picker">
+      <div class="section-eyebrow">
+        Target Devices
+        <span class="section-hint">click a device to attack it</span>
+      </div>
+      <div id="target-grid" class="target-grid">
+        <div class="target-grid__loading">Probing devices…</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stat-row">
+    <div class="stat-card" data-accent="observe">
+      <div class="stat-card__label">Service Health</div>
+      <div class="stat-card__value" id="stat-health">—</div>
+    </div>
+    <div class="stat-card" data-accent="red">
+      <div class="stat-card__label">Combined Pressure</div>
+      <div class="stat-card__value" id="stat-pressure">—</div>
+    </div>
+    <div class="stat-card" data-accent="orient">
+      <div class="stat-card__label">Detection Confidence</div>
+      <div class="stat-card__value" id="stat-detection">—</div>
+    </div>
+    <div class="stat-card" data-accent="blue">
+      <div class="stat-card__label">Step</div>
+      <div class="stat-card__value" id="stat-step">—</div>
+    </div>
+    <div class="stat-card" data-accent="purple">
+      <div class="stat-card__label">Last Red Action</div>
+      <div class="stat-card__value stat-card__value--sm" id="stat-red-action">—</div>
+    </div>
+    <div class="stat-card" data-accent="neutral">
+      <div class="stat-card__label">Last Blue Action</div>
+      <div class="stat-card__value stat-card__value--sm" id="stat-blue-action">—</div>
+    </div>
+  </section>
+
+  <section class="control-panel panel--full" aria-label="Arena controls">
+    <div class="control-panel__head">
+      <div>
+        <div class="panel__title">Command Console</div>
+        <div class="control-panel__hint">Simulation remains the default. A live cycle is limited to an explicitly armed, fixed-duration CPU or memory workload inside the resource-limited Arena target.</div>
+      </div>
+      <label class="token-field">Control token <input id="control-token" type="password" autocomplete="off" placeholder="only if configured"></label>
+    </div>
+
+    <div class="service-row" id="service-row">
+      <span class="service-pill">Red: checking…</span>
+      <span class="service-pill">Blue: checking…</span>
+      <span class="service-pill">Local LLM: checking…</span>
+      <span class="service-pill">Referee: idle</span>
+    </div>
+
+    <div class="control-grid">
+      <article class="control-card control-card--red">
+        <div class="control-card__title">Red agent <span>simulation by default</span></div>
+        <label>Action <select id="red-action"></select></label>
+        <div class="control-card__actions">
+          <button class="button button--red" id="red-act">Run simulated action</button>
+        </div>
+      </article>
+
+      <article class="control-card control-card--blue">
+        <div class="control-card__title">Blue agent <span>defensive controls</span></div>
+        <label>Action <select id="blue-action"></select></label>
+        <label class="confirm-field"><input id="blue-confirm" type="checkbox"> I confirm this is the dedicated lab namespace</label>
+        <div class="control-card__actions">
+          <button class="button button--blue" id="blue-act">Apply Blue action</button>
+        </div>
+      </article>
+
+      <article class="control-card control-card--referee">
+        <div class="control-card__title">Referee <span>local simulation</span></div>
+        <div class="referee-actions">
+          <button class="button" id="referee-reset">Reset round</button>
+          <button class="button button--purple" id="referee-step">Step selected actions</button>
+          <button class="button button--purple" id="referee-policy">Run both agent policies</button>
+        </div>
+        <div class="control-card__actions">
+          <button class="button button--llm" id="llm-analysis">Ask local LLM referee</button>
+        </div>
+      </article>
+
+      <article class="control-card control-card--referee">
+        <div class="control-card__title">Live lab cycle <span>bounded target workload</span></div>
+        <label class="confirm-field"><input id="live-confirm" type="checkbox"> I confirm this is the isolated lab and live-cycle flags are armed</label>
+        <div class="control-card__actions">
+          <button class="button button--purple" id="live-cycle">Run selected CPU/memory cycle</button>
+        </div>
+      </article>
+    </div>
+
+    <div class="control-result" id="control-result" aria-live="polite">Console ready. Select a target, then reset the local referee round.</div>
+  </section>
+
+  <section class="panel">
+    <div class="panel__title" id="chart-main-title">Health &amp; Pressure</div>
+    <canvas id="chart-main" width="900" height="240"></canvas>
+  </section>
+
+  <section class="panel">
+    <div class="panel__title">Network Symptoms</div>
+    <canvas id="chart-network" width="900" height="200"></canvas>
+  </section>
+
+  <section class="panel panel--full">
+    <div class="panel__title">Activity Feed</div>
+    <div class="timeline-header">
+      <span>Time</span><span>Target</span><span>Red</span>
+      <span>Blue</span><span>Pressure</span><span>Health</span>
+    </div>
+    <div id="timeline" class="timeline"></div>
+  </section>
+
+</main>
+
+<script src="charts.js"></script>
+<script src="network_map.js"></script>
+<script src="target_picker.js"></script>
+<script src="control_panel.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>
