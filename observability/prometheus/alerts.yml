@@ -1,0 +1,49 @@
+# observability/prometheus/alerts.yml
+#
+# A deliberately small set of alerts — the ones that would actually save
+# someone from staring at a stalled demo wondering what's wrong, not a
+# wall of rules nobody reads. Wire these into Alertmanager if you want
+# real notifications; without it, they just show up red in Prometheus's
+# own /alerts page and in Grafana, which is enough for a lab setup.
+
+groups:
+  - name: panopticon-availability
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.job }} on {{ $labels.laptop }} is down"
+          description: "Prometheus has not been able to scrape {{ $labels.job }} for at least 1 minute. If this is the referee-training job, this is expected between training runs."
+
+      - alert: TargetAppUnhealthy
+        expr: rate(target_app_errors_total[5m]) > 0.1
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          summary: "target-app 5xx rate is elevated"
+          description: "More than 10% of recent requests to target-app are failing — could be a real attack in progress or a broken deploy."
+
+  - name: panopticon-llm-core
+    rules:
+      - alert: LLMAgentAllMocked
+        expr: |
+          sum(rate(llm_core_agent_turns_total{mocked="True"}[10m]))
+            /
+          sum(rate(llm_core_agent_turns_total[10m])) > 0.95
+        for: 5m
+        labels: { severity: info }
+        annotations:
+          summary: "llm-core is running almost entirely on mock fallback"
+          description: "Over 95% of recent agent turns used the mock fallback rather than a real Ollama response — Ollama is likely unreachable from llm-laptop, or the configured models aren't pulled yet."
+
+  - name: panopticon-rl
+    rules:
+      - alert: ServiceHealthCritical
+        expr: panopticon_service_health < 0.2
+        for: 3m
+        labels: { severity: warning }
+        annotations:
+          summary: "Simulated/live target service_health has been critical for 3+ minutes"
+          description: "Either Red is dominating and Blue isn't recovering, or a real misconfiguration is degrading the target independent of the RL loop."

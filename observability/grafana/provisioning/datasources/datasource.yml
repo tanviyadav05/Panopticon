@@ -1,0 +1,14 @@
+# Auto-provisions the Prometheus datasource on Grafana startup — no
+# manual "add datasource" click-through needed. Grafana and Prometheus
+# run as sibling containers in the same docker-compose.yml, so "prometheus"
+# resolves via Docker's internal DNS.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: panopticon-prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true

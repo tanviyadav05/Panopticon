@@ -1,0 +1,75 @@
+# observability/prometheus/prometheus.yml
+#
+# Every job below scrapes a /metrics endpoint that actually exists in this
+# repo as of the multi-agent-LLM + observability update — see
+# docs/observability.md for what each one exports and why. Hostnames match
+# deployment/inventory.yaml; swap for IPs if you haven't set up /etc/hosts
+# entries yet.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  # --- Panopticon application services -------------------------------------
+
+  - job_name: "target-app"
+    # Go service, hand-rolled Prometheus text format — see
+    # arena/target-app/middleware.go's prometheusFormat(). Scraped directly
+    # at its Service port; through Kubernetes this is normally 80, adjust
+    # if you're port-forwarding or using a NodePort instead.
+    static_configs:
+      - targets: ["arena-laptop:30080"]
+        labels: { laptop: "04-arena", component: "target-app" }
+
+  - job_name: "llm-core"
+    static_configs:
+      - targets: ["llm-laptop:8090"]
+        labels: { laptop: "01-llm", component: "llm-core" }
+
+  - job_name: "red-team"
+    static_configs:
+      - targets: ["red-laptop:8081"]
+        labels: { laptop: "02-red", component: "red-attacker" }
+
+  - job_name: "blue-team"
+    static_configs:
+      - targets: ["blue-laptop:8082"]
+        labels: { laptop: "03-blue", component: "blue-controller" }
+
+  - job_name: "monitoring-dashboard"
+    static_configs:
+      - targets: ["command-laptop:8000"]
+        labels: { laptop: "05-command", component: "dashboard" }
+
+  - job_name: "referee-training"
+    # Only up while referee/training/train.py is actively running — a
+    # target showing "down" here is normal between training runs, not an
+    # incident. See docs/observability.md.
+    static_configs:
+      - targets: ["command-laptop:9500"]
+        labels: { laptop: "05-command", component: "training" }
+
+  # --- System-level metrics (node_exporter on every laptop) ----------------
+
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["llm-laptop:9100"]
+        labels: { laptop: "01-llm" }
+      - targets: ["red-laptop:9100"]
+        labels: { laptop: "02-red" }
+      - targets: ["blue-laptop:9100"]
+        labels: { laptop: "03-blue" }
+      - targets: ["arena-laptop:9100"]
+        labels: { laptop: "04-arena" }
+      - targets: ["command-laptop:9100"]
+        labels: { laptop: "05-command" }
+
+  # --- Prometheus scraping itself -------------------------------------------
+
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
