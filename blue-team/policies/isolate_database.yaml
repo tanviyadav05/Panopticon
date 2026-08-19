@@ -1,0 +1,14 @@
+# Cuts target-app off from postgres without touching target-app itself —
+# useful if Blue suspects the database, not the app, is the actual target
+# (e.g. a SQLi-driven exfiltration attempt via the search endpoint).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: isolate-database
+  namespace: panopticon-arena
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes: ["Ingress"]
+  ingress: []   # deny everyone, including target-app, until explicitly released
