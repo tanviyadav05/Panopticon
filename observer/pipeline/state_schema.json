@@ -1,0 +1,20 @@
+{
+  "$comment": "Ordered field list for the encoded state vector. referee/env/observation_builder.py must read these in the exact same order. min/max are used for clip-and-normalize to [0, 1]; they're rough operating ranges for a single-replica toy target-app, not hard physical limits.",
+  "version": 1,
+  "fields": [
+    { "name": "network.total_connections",      "source": "network.total_connections",          "min": 0,     "max": 500 },
+    { "name": "network.established",            "source": "network.connections_by_state.ESTABLISHED", "min": 0, "max": 300 },
+    { "name": "network.close_wait",              "source": "network.connections_by_state.CLOSE_WAIT",  "min": 0, "max": 300 },
+    { "name": "network.syn_sent",                "source": "network.connections_by_state.SYN_SENT",    "min": 0, "max": 300 },
+    { "name": "network.bytes_sent_rate",         "source": "network.bytes_sent_delta",            "min": 0,     "max": 5000000 },
+    { "name": "network.bytes_recv_rate",         "source": "network.bytes_recv_delta",            "min": 0,     "max": 5000000 },
+    { "name": "memory.rss_bytes",                "source": "memory.rss_bytes",                    "min": 0,     "max": 536870912 },
+    { "name": "memory.rss_delta",                "source": "memory.rss_delta_bytes",              "min": -67108864, "max": 67108864 },
+    { "name": "process.alive",                   "source": "process.alive",                       "min": 0,     "max": 1 },
+    { "name": "process.restart_detected",        "source": "process.restart_detected",            "min": 0,     "max": 1 },
+    { "name": "process.cpu_percent",             "source": "process.cpu_percent",                 "min": 0,     "max": 100 },
+    { "name": "syscall.rate",                    "source": "syscall.syscalls_per_interval",        "min": 0,     "max": 20000 },
+    { "name": "http.requests_per_window",        "source": "http.requests_per_window",            "min": 0,     "max": 2000 },
+    { "name": "http.error_rate",                 "source": "http.error_rate",                     "min": 0,     "max": 1 }
+  ]
+}

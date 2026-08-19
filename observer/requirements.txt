@@ -1,0 +1,14 @@
+# Core, portable telemetry stack — works on any Linux host without extra
+# kernel-dev packages. Versions match the root requirements.txt.
+psutil==7.2.2
+numpy==2.4.4
+requests==2.33.1
+PyYAML==6.0.3
+
+# Optional, for *real* eBPF tracepoints instead of the /proc-based fallback
+# in probes/syscall_probe.py. Not pip-installable — install via your distro:
+#   Ubuntu/Debian: apt-get install -y bpfcc-tools python3-bpfcc linux-headers-$(uname -r)
+# syscall_probe.py auto-detects `from bcc import BPF` and falls back cleanly
+# if it's missing, so this is optional for development and required only on
+# the real Arena laptop (04) if you want kernel-level syscall tracing rather
+# than the /proc/<pid>/status approximation.
