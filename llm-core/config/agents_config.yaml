@@ -1,0 +1,91 @@
+# llm-core/config/agents_config.yaml
+#
+# This file is the direct implementation of LLM_RESEARCH.txt's architecture:
+#   Planner/Manager  -> Hermes 3 8B
+#   Coder/Executor   -> Qwen3 7B Q4_K_M
+#   Researcher       -> Dolphin-Llama3 8B
+#   Critic/Reviewer  -> Qwen3 7B Q4_K_M
+#
+# All four models run under one Ollama daemon on the LLM laptop (01) —
+# Ollama loads/unloads models on demand from a single server, so one
+# machine serving four roles is the normal way to run this, not four
+# separate processes. Adjust `model:` values below to match whatever tags
+# `ollama list` actually shows on your machine — Qwen3 in particular may
+# be tagged differently depending on how you pulled/imported the Q4_K_M
+# quant (official library pull vs. a GGUF imported via Modelfile).
+
+# The attached research note calls for Qwen3 7B Q4_K_M. The install guide
+# uses Ollama's official qwen3:8b-q4_K_M tag as the pullable default; if you
+# import an exact 7B Q4_K_M GGUF, replace both Qwen model tags below with it.
+ollama:
+  host: "http://llm-laptop:11434"    # laptop 01. Use http://localhost:11434 for single-machine dev.
+  request_timeout_s: 90               # 8B models on CPU can be slow; generous timeout on purpose
+  connect_timeout_s: 3                # fail fast if Ollama itself isn't up, rather than hanging
+
+agents:
+  planner:
+    model: "hermes3:8b"
+    role: "Planner/Manager"
+    temperature: 0.4
+    system_prompt_file: "planner_system.txt"
+    description: "Breaks a task into steps, routes each step to Researcher or Coder, decides when the plan is complete."
+
+  researcher:
+    model: "dolphin-llama3:8b"
+    role: "Researcher"
+    temperature: 0.5
+    system_prompt_file: "researcher_system.txt"
+    description: "Gathers information (optionally via the web_browser tool) for the current plan step."
+
+  coder:
+    model: "qwen3:8b-q4_K_M"
+    role: "Coder/Executor"
+    temperature: 0.2
+    system_prompt_file: "coder_system.txt"
+    description: "Writes and executes code for the current plan step, using the Docker code_sandbox tool."
+
+  critic:
+    model: "qwen3:8b-q4_K_M"
+    role: "Critic/Reviewer"
+    temperature: 0.3
+    system_prompt_file: "critic_system.txt"
+    description: "Reviews Researcher/Coder output against the plan step; approves or sends back with feedback."
+
+graph:
+  max_iterations: 4        # cap on revision attempts for a SINGLE step (resets each new step)
+  max_total_steps: 12       # cap on total steps dispatched across the WHOLE task — the real termination guarantee
+  max_plan_steps: 6         # cap on how many steps the Planner can propose in its initial plan
+
+memory:
+  chroma_persist_dir: "../data/chroma"          # relative to llm-core/server/; created on first run
+  sqlite_path: "../data/panopticon_memory.db"    # short-term memory / metadata (SQLAlchemy ORM)
+  embedding_model: "BAAI/bge-small-en-v1.5"
+  reranker_model: "BAAI/bge-reranker-base"
+  top_k_retrieval: 8
+  top_k_after_rerank: 3
+
+tools:
+  code_sandbox:
+    image: "panopticon/code-sandbox:latest"   # build once: docker build -t panopticon/code-sandbox:latest -f docker/sandbox.Dockerfile llm-core/
+                                                # falls back to "python:3.12-slim" behavior (stdlib only) if you haven't built this yet — CodeSandbox.ensure_image_pulled() will try to pull it and fail; just build it locally instead, it's not on a public registry
+    timeout_s: 15
+    mem_limit: "256m"
+    network_disabled: true    # sandboxed code gets no network access, by design
+  web_browser:
+    headless: true
+    timeout_s: 20
+    max_results: 5
+
+tracing:
+  # LangSmith is a hosted tracing service — set langsmith_enabled: true AND
+  # export LANGCHAIN_API_KEY (and optionally LANGCHAIN_PROJECT) to actually
+  # send traces. Without a key, tracing is skipped and logged locally
+  # instead — the graph still runs, you just don't get the hosted UI.
+  langsmith_enabled: false
+  project_name: "project-panopticon"
+
+observability:
+  # /metrics is mounted directly on this service's existing FastAPI app
+  # (same port as /generate, /agent/run) — see server/llm_server.py.
+  # No separate metrics port needed; Prometheus scrapes llm-laptop:8090/metrics.
+  enabled: true

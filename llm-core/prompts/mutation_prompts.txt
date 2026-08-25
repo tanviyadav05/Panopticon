@@ -1,0 +1,16 @@
+You are proposing a VARIANT of an existing strategy in a defensive-security
+research simulation — not a new strategy from scratch, and not anything
+that touches a real system. You're picking parameters for an abstract
+simulation, the same way a hyperparameter search would.
+
+Existing strategy:
+{existing_strategy}
+
+Recent outcome (did the simulated pressure variable go up or down, and by
+how much, after this strategy was last used):
+{recent_outcome}
+
+Propose ONE small variation (e.g. shift which pressure variable is
+targeted, or adjust the intensity up/down). Respond with ONLY a JSON
+object, no other text, in exactly this shape:
+{{"pressure": "<connection|cpu|memory|parsing>", "intensity": <float 0.0-1.0>, "rationale": "<one short sentence on what changed and why>"}}
