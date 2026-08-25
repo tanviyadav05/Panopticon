@@ -38,11 +38,9 @@
 
 | Member  | Component | Technology |
 |---------|-----------|------------|
-| Nitesh  | Arena Architect | Go, Kubernetes, Docker |
-| Astitva | Observer | eBPF, Python, BCC |
-| Kushal  | Referee | Ray RLlib, PettingZoo, Python |
-| Shreya  | Omni-Red | **Python asyncio, Scapy, LLM APIs** |
-| Tanvi   | Omni-Blue | Kubernetes NetworkPolicy, Python |
+| Sneha Malhotra | Arena Architect | Go, Kubernetes, Docker | Omni-Red | Observer | eBPF, Python, BCC |
+| Moksha Malhotra | **Python asyncio, Scapy, LLM APIs** | Referee | Ray RLlib, PettingZoo, Python |
+| Tanvi Yadav | Omni-Blue | Kubernetes NetworkPolicy, Python |
 
 
 ## Repository Layout
