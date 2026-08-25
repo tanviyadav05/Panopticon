@@ -1,0 +1,61 @@
+# Top-level dependencies shared across referee/, analysis/, monitoring/,
+# blue-team/, llm-core/, and red-team/. observer/ keeps its own
+# requirements.txt separate (see that file for why — it's the one
+# component with an optional system-level dependency, bcc, that isn't
+# pip-installable).
+#
+#   pip install -r requirements.txt --break-system-packages
+#
+# Versions below are what this repo was actually built and tested against.
+# If you're setting this up later and pip fights you on these exact
+# versions, loosen the pins rather than fighting them — nothing here
+# depends on exact patch versions.
+
+numpy==2.4.4
+gymnasium==1.3.0
+pettingzoo==1.26.1
+torch==2.12.1
+fastapi==0.138.0
+uvicorn[standard]==0.49.0
+pydantic==2.13.4
+scikit-learn==1.8.0
+joblib==1.5.3
+psutil==7.2.2
+requests==2.33.1
+PyYAML==6.0.3
+matplotlib==3.10.8
+pandas==3.0.2
+websockets==16.0
+kubernetes==36.0.2
+httpx==0.28.1
+
+# Multi-agent LLM stack (llm-core/) — see docs/multi_agent_llm.md
+langgraph==1.2.10
+chromadb==1.5.9
+SQLAlchemy==2.0.51
+sentence-transformers==5.6.1   # embeddings + reranker; falls back to a
+                                # deterministic hash/lexical scorer if the
+                                # real BAAI models can't be downloaded —
+                                # see llm-core/memory/embeddings.py
+playwright==1.56.0              # web_browser tool; run `playwright install
+                                 # chromium` once on whichever laptop runs
+                                 # the Researcher role in live mode
+docker==7.2.0                    # code_sandbox tool — requires a real
+                                  # Docker daemon; fails closed without one
+langsmith==0.10.12               # optional tracing — no-ops without
+                                  # LANGCHAIN_API_KEY set
+
+# Observability (Prometheus + Grafana) — see docs/observability.md
+prometheus-client==0.26.0
+
+# Optional — only needed if you point llm-core at real local weights
+# rather than the default LLM_BACKEND=mock:
+# transformers==5.12.1
+
+# Optional system package (not pip-installable) — arena/targets/wifi_router.py's
+# SNMP sysDescr probe shells out to `snmpget` if present and skips it
+# gracefully otherwise. Install via your distro if you want that one field:
+#   Ubuntu/Debian: apt-get install -y snmp
+
+# Dev/test only:
+pytest==9.1.1
