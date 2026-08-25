@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: target-app
+  namespace: panopticon-arena
+  labels: { app: target-app, panopticon.io/role: arena-target }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: target-app }
+  template:
+    metadata:
+      labels: { app: target-app, panopticon.io/role: arena-target }
+    spec:
+      containers:
+        - name: target-app
+          image: panopticon/target-app:latest
+          ports: [{ containerPort: 8080 }]
+          env:
+            - name: PORT
+              value: "8080"
+            - name: DATABASE_URL
+              value: "postgres://panopticon:change-me-before-real-use@postgres:5432/arena?sslmode=disable"
+            - name: PANOPTICON_DEBUG
+              value: "1"   # left on for training visibility; turn off for anything resembling production
+            - name: PANOPTICON_LAB_WORKLOADS_ARMED
+              value: "0"   # enable only for the dedicated isolated resource-loop demonstration
+          envFrom:
+            - secretRef:
+                name: panopticon-lab-control
+                optional: true
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits: { cpu: "250m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: target-app
+  namespace: panopticon-arena
+spec:
+  selector: { app: target-app }
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 8080
+      nodePort: 30080

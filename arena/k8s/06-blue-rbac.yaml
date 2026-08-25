@@ -1,0 +1,35 @@
+# Least-privilege credentials for Laptop 03.  This is intentionally not an
+# admin kubeconfig: Blue can modify only Services and NetworkPolicies in the
+# dedicated Panopticon namespace.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: panopticon-blue
+  namespace: panopticon-arena
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: panopticon-blue-controller
+  namespace: panopticon-arena
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "patch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: panopticon-blue-controller
+  namespace: panopticon-arena
+subjects:
+  - kind: ServiceAccount
+    name: panopticon-blue
+    namespace: panopticon-arena
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: panopticon-blue-controller

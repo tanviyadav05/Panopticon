@@ -1,0 +1,36 @@
+# Baseline reachability before blue-team/policies/*.yaml tighten things
+# further at runtime. Default-deny ingress, then explicit allows.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: panopticon-arena
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-to-target-app
+  namespace: panopticon-arena
+spec:
+  podSelector:
+    matchLabels: { app: target-app }
+  policyTypes: ["Ingress"]
+  ingress:
+    - from: [{ namespaceSelector: {} }]   # open within the cluster; Red/Blue laptops reach it via the Service's NodePort/Ingress
+      ports: [{ protocol: TCP, port: 8080 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-to-postgres-from-target-app-only
+  namespace: panopticon-arena
+spec:
+  podSelector:
+    matchLabels: { app: postgres }
+  policyTypes: ["Ingress"]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: target-app } } }]
+      ports: [{ protocol: TCP, port: 5432 }]

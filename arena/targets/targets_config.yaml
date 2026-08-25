@@ -1,0 +1,71 @@
+# arena/targets/targets_config.yaml
+#
+# Edit the ip addresses to match your actual lab segment before running.
+# The default IPs follow the convention in deployment/switch_topology.md
+# (192.168.50.x, wired-switch example — see that file's "WiFi alternative"
+# section if your segment is wireless; the IP scheme itself doesn't
+# change, only how you assign it). device_type must match
+# common/target_types.DeviceType.
+#
+# 'enabled: false' keeps a device in the registry (it shows in the
+# dashboard as "not configured") without the registry trying to probe it.
+#
+# probe_timeout_multiplier (optional, default 1.0): scales every probe's
+# timeout (ping/TCP connect/HTTP HEAD/SSH banner/mDNS — see
+# arena/targets/base_target.py). Bump this for WiFi-connected devices,
+# where latency and jitter run higher than a wired switch — 2.0-3.0 is a
+# reasonable starting point for a phone/webcam/laptop reached over WiFi.
+# If you've moved the WHOLE lab to WiFi (see docs/multi_device_targets.md),
+# set it on every entry, not just the ones that were already wireless.
+
+targets:
+  - name: "target-app"
+    device_type: "go_app"
+    ip: "192.168.50.14"         # arena-laptop (04) Windows-published NodePort
+    enabled: true
+    http_port: 30080
+
+  - name: "lab-router"
+    device_type: "wifi_router"
+    ip: "192.168.50.1"           # change to your router's actual LAN IP
+    enabled: false
+    snmp_community: "public"     # read-only community — only used by _snmp_sysdescr()
+    probe_timeout_multiplier: 2.0   # this one's inherently WiFi-adjacent already
+
+  - name: "lab-webcam"
+    device_type: "webcam"
+    ip: "192.168.50.20"          # change to your camera's IP
+    enabled: false
+    http_port: 80
+    rtsp_port: 554
+    probe_timeout_multiplier: 2.0   # cheap IP cameras are almost always WiFi-only
+
+  - name: "android-pixel"
+    device_type: "android_phone"
+    ip: "192.168.50.21"          # change to your phone's IP (DHCP static lease recommended)
+    enabled: false
+    adb_port: 5555                # requires `adb tcpip 5555` on the device first
+    probe_timeout_multiplier: 2.0   # phones are WiFi-only by definition here
+
+  - name: "team-windows"
+    device_type: "windows_laptop"
+    ip: "192.168.50.22"
+    enabled: false
+    # probe_timeout_multiplier: 2.0   # uncomment if this laptop is WiFi-connected
+
+  - name: "team-linux"
+    device_type: "linux_laptop"
+    ip: "192.168.50.23"
+    enabled: false
+    http_port: 80
+    # probe_timeout_multiplier: 2.0   # uncomment if this laptop is WiFi-connected
+
+  - name: "team-mac"
+    device_type: "mac_laptop"
+    ip: "192.168.50.24"
+    enabled: false
+    # probe_timeout_multiplier: 2.0   # uncomment if this laptop is WiFi-connected
+
+probe:
+  interval_seconds: 10          # background health-poll cadence — consider 15-20s over WiFi to reduce contention
+  timeout_seconds: 2

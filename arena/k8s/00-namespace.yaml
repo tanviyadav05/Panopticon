@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: panopticon-arena
+  labels:
+    app.kubernetes.io/part-of: project-panopticon
+    panopticon.io/component: arena

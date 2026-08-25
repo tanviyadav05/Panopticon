@@ -1,0 +1,50 @@
+# Deploys the Observer on every node in the Arena's cluster, since eBPF
+# programs must attach to the kernel that's actually running the traced
+# process (see observer/probes/). Requires a privileged security context to
+# load BPF programs.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: observer
+  namespace: panopticon-arena
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: observer
+  namespace: panopticon-arena
+spec:
+  selector:
+    matchLabels: { app: observer }
+  template:
+    metadata:
+      labels: { app: observer }
+    spec:
+      serviceAccountName: observer
+      hostPID: true
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      hostAliases:
+        - ip: "192.168.50.15"
+          hostnames:
+            - "command-laptop"
+      containers:
+        - name: observer
+          image: panopticon/observer:latest
+          securityContext:
+            privileged: true   # required for eBPF program loading
+          env:
+            - name: REFEREE_PUBLISH_URL
+              value: "http://command-laptop:9600/ingest"
+            - name: TARGET_PROCESS_NAME
+              value: "target-app"
+            - name: TARGET_METRICS_URL
+              value: "http://target-app.panopticon-arena.svc.cluster.local/metrics"
+          volumeMounts:
+            - { name: sys-kernel-debug, mountPath: /sys/kernel/debug }
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits: { cpu: "500m", memory: "512Mi" }
+      volumes:
+        - name: sys-kernel-debug
+          hostPath: { path: /sys/kernel/debug }
