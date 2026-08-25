@@ -1,0 +1,64 @@
+# Machine-readable laptop <-> role mapping. Setup tooling (and laptop_roles.md,
+# which is the human-readable version of this same mapping) both derive from
+# this file conceptually — keep them in sync if you change it.
+#
+# Every laptop runs node_exporter on 9100 (the universal Prometheus
+# convention — do not repurpose this port for anything else). Every
+# Panopticon service mounts its own /metrics on its existing app port
+# (no separate metrics port needed) — see docs/observability.md.
+laptops:
+  - id: "01"
+    role: llm
+    hostname: llm-laptop
+    runs: ["llm-core/"]
+    ports:
+      llm_gateway: 8090        # /generate, /agent/run, /agents, /memory/search, /metrics
+      ollama: 11434             # real Ollama daemon serving all 4 agent models
+      node_exporter: 9100
+    notes: "Needs the most RAM/disk of the five — runs Ollama serving all 4 models (Hermes 3, Qwen3 x2, Dolphin-Llama3). See docs/multi_agent_llm.md."
+
+  - id: "02"
+    role: red
+    hostname: red-laptop
+    runs: ["red-team/"]
+    ports:
+      red_attacker: 8081        # /act, /decide, /attacks, /metrics
+      node_exporter: 9100
+    notes: "Calls out to llm-laptop:8090 and arena-laptop's exposed target-app port."
+
+  - id: "03"
+    role: blue
+    hostname: blue-laptop
+    runs: ["blue-team/"]
+    ports:
+      blue_controller: 8082     # /act, /decide, /metrics
+      node_exporter: 9100
+    notes: "Needs a kubeconfig pointed at arena-laptop's cluster to do anything beyond rate_limit."
+
+  - id: "04"
+    role: arena
+    hostname: arena-laptop
+    runs: ["arena/", "observer/"]
+    ports:
+      target_app: 30080          # Windows-published NodePort; includes /metrics
+      postgres: 5432
+      node_exporter: 9100
+    notes: "observer/ runs here (as a DaemonSet inside this laptop's own cluster) because eBPF must attach to the kernel actually running target-app."
+
+  - id: "05"
+    role: command
+    hostname: command-laptop
+    runs: ["referee/", "monitoring/", "observability/"]
+    ports:
+      referee_ingest: 9600       # action_executor.py's live-mode state ingest (moved off 9100 to avoid colliding with node_exporter)
+      training_metrics: 9500     # train.py's Prometheus gauges — only listens during an active run
+      dashboard: 8000             # includes /metrics
+      prometheus: 9090
+      grafana: 3000
+      node_exporter: 9100
+    notes: "Runs the training loop, the human-facing dashboard, and (new) the Prometheus + Grafana observability stack — see docs/observability.md."
+
+network:
+  topology: "single gigabit switch (default) or a dedicated WiFi AP — see deployment/switch_topology.md. Either way: no WAN uplink."
+  subnet: "192.168.50.0/24 (example — pick anything; nothing here depends on a specific range)"
+  addressing: "static IP per laptop (wired) or DHCP reservation by MAC (WiFi) — see deployment/switch_topology.md"
