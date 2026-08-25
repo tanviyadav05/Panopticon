@@ -1,0 +1,39 @@
+# PPO hyperparameters — kept out of train.py so a sweep doesn't require
+# touching code. Independent PPO (IPPO): red and blue each get their own
+# actor-critic network and are trained as if the other were part of the
+# environment.
+
+env:
+  mode: sim              # "sim" (self-contained) or "live" (real Arena via action_executor)
+  max_steps: 200          # steps per episode before truncation
+  seed: 42
+
+rollout:
+  steps_per_iteration: 2048   # env steps collected before each PPO update
+  total_timesteps: 200000
+
+ppo:
+  learning_rate: 0.0003
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  epochs_per_update: 4
+  minibatch_size: 256
+  value_loss_coef: 0.5
+  entropy_coef: 0.01
+  max_grad_norm: 0.5
+
+network:
+  hidden_size: 64
+
+checkpointing:
+  save_every_iterations: 10
+  keep_last_n: 5
+  checkpoint_dir: "../../experiments/checkpoints"
+
+logging:
+  log_every_iterations: 1
+
+observability:
+  metrics_enabled: true
+  metrics_port: 9500   # scraped by observability/prometheus/prometheus.yml; only listens during an active training run
